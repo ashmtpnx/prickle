@@ -47,10 +47,14 @@ export default function ChatWindow({ myIdentity }: ChatWindowProps) {
         .limit(200);
 
       if (error) {
-        // If table doesn't exist yet or RLS blocked, show informative prompt
-        console.error('Error fetching messages:', error);
-        if (error.message.includes('relation "public.messages" does not exist')) {
-          setErrorMsg('Supabase table `messages` not created yet. Please run the SQL migration script.');
+        // Graceful check for table missing or placeholder credentials without popping Next.js dev overlay
+        const errMsg = error.message || error.details || JSON.stringify(error);
+        if (errMsg.includes('relation "public.messages" does not exist') || errMsg === '{}') {
+          setErrorMsg(
+            'Supabase database table `messages` not found or invalid URL/Key. Please check your .env.local keys and execute `20260715_init.sql` inside your Supabase SQL Editor!'
+          );
+        } else {
+          setErrorMsg(`Supabase Error: ${errMsg || 'Database connection check failed.'}`);
         }
       } else if (data) {
         setMessages(data as Message[]);
