@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, isPlaceholderSupabase } from '@/lib/supabaseClient';
 import { Message, SenderIdentity, getPartnerIdentity, PresencePayload } from '@/lib/types';
 import { canGroupConsecutiveMessages, formatStickyHeaderDate, checkSameDay } from '@/lib/dateUtils';
 import { sendMessage, editMessage, deleteMessage, markMessagesAsRead } from '@/app/actions/messageActions';
@@ -19,7 +19,6 @@ interface ChatWindowProps {
 }
 
 export default function ChatWindow({ myIdentity }: ChatWindowProps) {
-  const partnerIdentity = getPartnerIdentity(myIdentity);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -32,6 +31,7 @@ export default function ChatWindow({ myIdentity }: ChatWindowProps) {
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [unreadCountBelow, setUnreadCountBelow] = useState(0);
 
+  const partnerIdentity = getPartnerIdentity(myIdentity);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const channelRef = useRef<any>(null);
@@ -40,6 +40,14 @@ export default function ChatWindow({ myIdentity }: ChatWindowProps) {
   // Fetch initial message history (last 200 messages for lifetime instant load speed)
   const fetchMessages = useCallback(async () => {
     try {
+      if (isPlaceholderSupabase) {
+        setErrorMsg(
+          '⚠️ Next.js Build Cache Issue on Render: Your app was built with placeholder/empty Supabase keys! Next.js bakes environment variables into the frontend JavaScript during `npm run build`. To fix: In your Render Dashboard, double-check `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, then click "Manual Deploy -> Clear build cache & deploy" so Next.js embeds your real keys!'
+        );
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('messages')
         .select('*')
@@ -47,11 +55,15 @@ export default function ChatWindow({ myIdentity }: ChatWindowProps) {
         .limit(200);
 
       if (error) {
-        // Graceful check for table missing or placeholder credentials without popping Next.js dev overlay
+        // Graceful check for table missing or Failed to fetch due to stale build cache
         const errMsg = error.message || error.details || JSON.stringify(error);
         if (errMsg.includes('relation "public.messages" does not exist') || errMsg === '{}') {
           setErrorMsg(
             'Supabase database table `messages` not found or invalid URL/Key. Please check your .env.local keys and execute `20260715_init.sql` inside your Supabase SQL Editor!'
+          );
+        } else if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError')) {
+          setErrorMsg(
+            '⚠️ Browser Network Error ("Failed to fetch"): The browser could not connect to your Supabase URL. If you hosted on Render, you MUST click "Manual Deploy -> Clear build cache & deploy" after entering your Supabase environment variables! Next.js requires a fresh build without cache to embed NEXT_PUBLIC keys into the browser bundle.'
           );
         } else {
           setErrorMsg(`Supabase Error: ${errMsg || 'Database connection check failed.'}`);
@@ -59,8 +71,15 @@ export default function ChatWindow({ myIdentity }: ChatWindowProps) {
       } else if (data) {
         setMessages(data as Message[]);
       }
-    } catch (err) {
-      console.error('Failed to load messages:', err);
+    } catch (err: any) {
+      const errMsg = err?.message || JSON.stringify(err);
+      if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError') || isPlaceholderSupabase) {
+        setErrorMsg(
+          '⚠️ Browser Network Error ("Failed to fetch"): The browser could not connect to your Supabase URL. If you hosted on Render, you MUST click "Manual Deploy -> Clear build cache & deploy" after entering your Supabase environment variables! Next.js requires a fresh build without cache to embed NEXT_PUBLIC keys into the browser bundle.'
+        );
+      } else {
+        setErrorMsg(`Failed to load messages: ${errMsg}`);
+      }
     } finally {
       setLoading(false);
     }
