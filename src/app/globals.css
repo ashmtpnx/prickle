@@ -1,26 +1,106 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f1f4f8;
+  --foreground: #1e293b;
+  --chat-bg: #e6ecef;
+  --header-bg: #ffffff;
+  --bubble-partner: #ffffff;
+}
+
+.dark {
+  --background: #0e1621;
+  --foreground: #f1f5f9;
+  --chat-bg: #0e1621;
+  --header-bg: #17212b;
+  --bubble-partner: #182533;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-chat-bg: var(--chat-bg);
+  --color-header-bg: var(--header-bg);
+  --color-bubble-partner: var(--bubble-partner);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbars for sleek Telegram look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+/* Telegram geometric / Prickle paper-cut subtle pattern effect */
+.chat-wallpaper {
+  background-color: var(--chat-bg);
+  background-image: radial-gradient(rgba(42, 171, 238, 0.08) 1.5px, transparent 1.5px), radial-gradient(rgba(229, 107, 136, 0.08) 1.5px, var(--chat-bg) 1.5px);
+  background-size: 36px 36px;
+  background-position: 0 0, 18px 18px;
+}
+
+.dark .chat-wallpaper {
+  background-image: radial-gradient(rgba(42, 171, 238, 0.06) 1.5px, transparent 1.5px), radial-gradient(rgba(229, 107, 136, 0.06) 1.5px, var(--chat-bg) 1.5px);
+}
+
+/* Micro animations */
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pulseSoft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-msg {
+  animation: slideUpFade 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-pulse-soft {
+  animation: pulseSoft 1.5s ease-in-out infinite;
+}
+
+/* Glassmorphism utility */
+.glass-header {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dark .glass-header {
+  background: rgba(23, 33, 43, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
