@@ -37,13 +37,14 @@ export default function ChatWindow({ myIdentity }: ChatWindowProps) {
   const channelRef = useRef<any>(null);
   const particlesRef = useRef<FloatingParticlesRef | null>(null);
 
-  // Fetch initial message history
+  // Fetch initial message history (last 200 messages for lifetime instant load speed)
   const fetchMessages = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('messages')
         .select('*')
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .limit(200);
 
       if (error) {
         // If table doesn't exist yet or RLS blocked, show informative prompt
@@ -112,16 +113,23 @@ export default function ChatWindow({ myIdentity }: ChatWindowProps) {
         (payload) => {
           const newMsg = payload.new as Message;
           setMessages((prev) => {
-            // Avoid duplicate if optimist inserted
             if (prev.some((m) => m.id === newMsg.id)) return prev;
+            const hasOptimistic = prev.some(
+              (m) => m.id.startsWith('temp-') && m.sender === newMsg.sender && (m.content === newMsg.content || m.media_url === newMsg.media_url)
+            );
+            if (hasOptimistic) {
+              return prev.map((m) =>
+                m.id.startsWith('temp-') && m.sender === newMsg.sender && (m.content === newMsg.content || m.media_url === newMsg.media_url)
+                  ? newMsg
+                  : m
+              );
+            }
             return [...prev, newMsg];
           });
 
           // Check if we should auto-scroll or increment unread indicator
           if (newMsg.sender === myIdentity) {
-            sounds.playPop();
-            particlesRef.current?.triggerBurst(window.innerWidth / 2, window.innerHeight - 150, ['💖', '✨', '🦔']);
-            setTimeout(() => scrollToBottom(true), 50);
+            setTimeout(() => scrollToBottom(true), 10);
           } else {
             sounds.playChime();
             particlesRef.current?.triggerBurst(window.innerWidth / 2, 200, ['💌', '💖', '✨', '💕']);
@@ -248,20 +256,58 @@ export default function ChatWindow({ myIdentity }: ChatWindowProps) {
   const handleSendMessage = async (content: string | null, mediaUrl: string | null, mediaType: any) => {
     sounds.playPop();
     particlesRef.current?.triggerBurst(window.innerWidth / 2, window.innerHeight - 150, ['💖', '✨', '💕', '🦔']);
+    
+    // 0ms Optimistic UI Insertion
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const optimisticMsg: Message = {
+      id: tempId,
+      sender: myIdentity,
+      content: content || '',
+      media_url: mediaUrl,
+      media_type: mediaType,
+      created_at: new Date().toISOString(),
+      edited_at: null,
+      deleted: false,
+      read_at: null,
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+    setTimeout(() => scrollToBottom(true), 10);
+
     await sendMessage(myIdentity, content, mediaUrl, mediaType);
   };
 
   const handleSendSticker = async (text: string) => {
     sounds.playPop();
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const optimisticMsg: Message = {
+      id: tempId,
+      sender: myIdentity,
+      content: text,
+      media_url: null,
+      media_type: null,
+      created_at: new Date().toISOString(),
+      edited_at: null,
+      deleted: false,
+      read_at: null,
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+    setTimeout(() => scrollToBottom(true), 10);
+
     await sendMessage(myIdentity, text, null, null);
   };
 
   const handleEditMessage = async (id: string, newContent: string) => {
+    // 0ms Optimistic Edit
+    setMessages((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, content: newContent, edited_at: new Date().toISOString() } : m))
+    );
     await editMessage(id, newContent);
   };
 
   const handleDeleteMessage = async (id: string) => {
     sounds.playPop();
+    // 0ms Optimistic Delete
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, deleted: true } : m)));
     await deleteMessage(id);
   };
 

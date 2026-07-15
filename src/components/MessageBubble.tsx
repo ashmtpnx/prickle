@@ -14,7 +14,7 @@ interface MessageBubbleProps {
   onDelete: (id: string) => Promise<void>;
 }
 
-export default function MessageBubble({
+function MessageBubbleComponent({
   message,
   isSelf,
   isGrouped,
@@ -304,3 +304,16 @@ export default function MessageBubble({
     </>
   );
 }
+
+export default React.memo(MessageBubbleComponent, (prev, next) => {
+  return (
+    prev.message.id === next.message.id &&
+    prev.message.content === next.message.content &&
+    prev.message.read_at === next.message.read_at &&
+    prev.message.deleted === next.message.deleted &&
+    prev.message.edited_at === next.message.edited_at &&
+    prev.isSelf === next.isSelf &&
+    prev.isGrouped === next.isGrouped &&
+    prev.isLastInGroup === next.isLastInGroup
+  );
+});

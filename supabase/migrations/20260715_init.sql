@@ -77,3 +77,11 @@ USING (bucket_id = 'media');
 CREATE POLICY "Allow public delete in media bucket"
 ON storage.objects FOR DELETE
 USING (bucket_id = 'media');
+
+-- ====================================================================
+-- 9. HIGH-PERFORMANCE INDEXES (Ensures lifetime lag-free queries)
+-- ====================================================================
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON public.messages (created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_messages_sender_unread ON public.messages (sender, read_at) WHERE read_at IS NULL AND deleted = false;
+CREATE INDEX IF NOT EXISTS idx_push_subs_user ON public.push_subscriptions (user_identity);
+
