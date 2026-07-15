@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { SenderIdentity, USER_PROFILES } from '@/lib/types';
 import { Lock, Eye, EyeOff, Sparkles, Heart, ArrowRight, ShieldCheck } from 'lucide-react';
+import { sounds } from '@/lib/soundUtils';
+import FloatingParticles, { FloatingParticlesRef } from '@/components/FloatingParticles';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,6 +14,7 @@ export default function LoginPage() {
   const [showPin, setShowPin] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const particlesRef = useRef<FloatingParticlesRef | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +56,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center p-4 sm:p-6 chat-wallpaper relative overflow-hidden transition-colors">
+      <FloatingParticles ref={particlesRef} />
+
       {/* Decorative floating blurred orbs */}
       <div className="absolute top-1/4 -left-20 w-72 h-72 bg-[#2AABEE]/20 rounded-full blur-3xl pointer-events-none animate-pulse-soft" />
       <div className="absolute bottom-1/4 -right-20 w-72 h-72 bg-[#E56B88]/20 rounded-full blur-3xl pointer-events-none animate-pulse-soft [animation-delay:-0.75s]" />
@@ -60,15 +65,22 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white/90 dark:bg-[#17212b]/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800 p-6 sm:p-8 z-10 animate-msg">
         {/* Prickle Hedgehog Branding Header */}
         <div className="text-center space-y-2 mb-6">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-tr from-[#2AABEE] via-[#9B7AD5] to-[#E56B88] shadow-lg mb-1 transform hover:scale-105 transition-transform duration-300">
+          <div
+            onClick={(e) => {
+              sounds.playSquish();
+              particlesRef.current?.triggerBurst(e.clientX, e.clientY, ['💖', '✨', '🦔', '🥰', '💫']);
+            }}
+            title="Tap Prickle for love! 🦔💖"
+            className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-tr from-[#2AABEE] via-[#9B7AD5] to-[#E56B88] shadow-lg mb-1 transform hover:scale-110 active:scale-95 transition-transform duration-300 cursor-pointer animate-wiggle"
+          >
             <span className="text-4xl select-none filter drop-shadow-md">🦔</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-[#2AABEE] to-[#E56B88] bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-[#2AABEE] to-[#E56B88] bg-clip-text text-transparent animate-pop-bounce">
             PRICKLE
           </h1>
           <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 flex items-center justify-center gap-1.5">
             <span>Only for Puchki and Puchu</span>
-            <Heart className="w-3.5 h-3.5 text-[#E56B88] fill-[#E56B88]" />
+            <Heart className="w-3.5 h-3.5 text-[#E56B88] fill-[#E56B88] animate-heartbeat" />
           </p>
           <p className="text-[11px] text-slate-400 dark:text-slate-500 font-mono tracking-wider uppercase pt-0.5">
             One-to-One Private Messaging
@@ -86,17 +98,19 @@ export default function LoginPage() {
               {/* Puchki Card */}
               <button
                 type="button"
-                onClick={() => {
+                onClick={(e) => {
+                  sounds.playPop();
+                  particlesRef.current?.triggerBurst(e.clientX, e.clientY, ['✨', '💙', '💕', '🌟']);
                   setSelectedIdentity('puchki');
                   setError(null);
                 }}
                 className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-200 cursor-pointer ${
                   selectedIdentity === 'puchki'
-                    ? 'border-[#2AABEE] bg-[#2AABEE]/10 dark:bg-[#2AABEE]/20 shadow-md scale-[1.02]'
+                    ? 'border-[#2AABEE] bg-[#2AABEE]/10 dark:bg-[#2AABEE]/20 shadow-md scale-[1.04]'
                     : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
               >
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#2AABEE] to-[#229ED9] flex items-center justify-center text-xl shadow-inner mb-2">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#2AABEE] to-[#229ED9] flex items-center justify-center text-xl shadow-inner mb-2 animate-bounce">
                   ✨
                 </div>
                 <span className="font-bold text-sm text-slate-800 dark:text-slate-100">Puchki</span>
@@ -108,17 +122,19 @@ export default function LoginPage() {
               {/* Puchu Card */}
               <button
                 type="button"
-                onClick={() => {
+                onClick={(e) => {
+                  sounds.playPop();
+                  particlesRef.current?.triggerBurst(e.clientX, e.clientY, ['🦔', '💖', '🌸', '🥰']);
                   setSelectedIdentity('puchu');
                   setError(null);
                 }}
                 className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-200 cursor-pointer ${
                   selectedIdentity === 'puchu'
-                    ? 'border-[#E56B88] bg-[#E56B88]/10 dark:bg-[#E56B88]/20 shadow-md scale-[1.02]'
+                    ? 'border-[#E56B88] bg-[#E56B88]/10 dark:bg-[#E56B88]/20 shadow-md scale-[1.04]'
                     : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
               >
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E56B88] to-[#D4506F] flex items-center justify-center text-xl shadow-inner mb-2">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E56B88] to-[#D4506F] flex items-center justify-center text-xl shadow-inner mb-2 animate-bounce [animation-delay:-0.2s]">
                   🦔
                 </div>
                 <span className="font-bold text-sm text-slate-800 dark:text-slate-100">Puchu</span>

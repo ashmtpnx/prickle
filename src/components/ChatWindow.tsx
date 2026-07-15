@@ -9,7 +9,10 @@ import Header from './Header';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import Composer from './Composer';
-import { ArrowDown, MessageSquareCode, ShieldAlert, Sparkles } from 'lucide-react';
+import QuickStickers from './QuickStickers';
+import FloatingParticles, { FloatingParticlesRef } from './FloatingParticles';
+import { ArrowDown, MessageSquareCode, ShieldAlert, Sparkles, Heart } from 'lucide-react';
+import { sounds } from '@/lib/soundUtils';
 
 interface ChatWindowProps {
   myIdentity: SenderIdentity;
@@ -32,6 +35,7 @@ export default function ChatWindow({ myIdentity }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const channelRef = useRef<any>(null);
+  const particlesRef = useRef<FloatingParticlesRef | null>(null);
 
   // Fetch initial message history
   const fetchMessages = useCallback(async () => {
@@ -115,8 +119,12 @@ export default function ChatWindow({ myIdentity }: ChatWindowProps) {
 
           // Check if we should auto-scroll or increment unread indicator
           if (newMsg.sender === myIdentity) {
+            sounds.playPop();
+            particlesRef.current?.triggerBurst(window.innerWidth / 2, window.innerHeight - 150, ['💖', '✨', '🦔']);
             setTimeout(() => scrollToBottom(true), 50);
           } else {
+            sounds.playChime();
+            particlesRef.current?.triggerBurst(window.innerWidth / 2, 200, ['💌', '💖', '✨', '💕']);
             if (document.visibilityState === 'visible' && !showScrollBottom) {
               setTimeout(() => {
                 scrollToBottom(true);
@@ -238,7 +246,14 @@ export default function ChatWindow({ myIdentity }: ChatWindowProps) {
   };
 
   const handleSendMessage = async (content: string | null, mediaUrl: string | null, mediaType: any) => {
+    sounds.playPop();
+    particlesRef.current?.triggerBurst(window.innerWidth / 2, window.innerHeight - 150, ['💖', '✨', '💕', '🦔']);
     await sendMessage(myIdentity, content, mediaUrl, mediaType);
+  };
+
+  const handleSendSticker = async (text: string) => {
+    sounds.playPop();
+    await sendMessage(myIdentity, text, null, null);
   };
 
   const handleEditMessage = async (id: string, newContent: string) => {
@@ -246,11 +261,15 @@ export default function ChatWindow({ myIdentity }: ChatWindowProps) {
   };
 
   const handleDeleteMessage = async (id: string) => {
+    sounds.playPop();
     await deleteMessage(id);
   };
 
   return (
     <div className="flex flex-col h-[100dvh] w-full max-w-3xl mx-auto bg-white dark:bg-[#0e1621] shadow-2xl relative border-x border-slate-200/60 dark:border-slate-800/80 transition-colors">
+      {/* Interactive Floating Particles Layer */}
+      <FloatingParticles ref={particlesRef} />
+
       {/* Header */}
       <Header
         myIdentity={myIdentity}
@@ -258,6 +277,9 @@ export default function ChatWindow({ myIdentity }: ChatWindowProps) {
         partnerOnline={partnerOnline}
         partnerTyping={partnerTyping}
         partnerLastSeen={partnerLastSeen}
+        onTriggerBurst={(x, y) => {
+          particlesRef.current?.triggerBurst(x, y, ['💖', '✨', '💕', '🦔', '🥰']);
+        }}
       />
 
       {/* Message List Area */}
@@ -278,15 +300,23 @@ export default function ChatWindow({ myIdentity }: ChatWindowProps) {
             <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">{errorMsg}</p>
           </div>
         ) : messages.length === 0 ? (
-          <div className="my-auto text-center space-y-3 p-6 max-w-sm mx-auto bg-white/80 dark:bg-[#182533]/80 backdrop-blur-md rounded-3xl border border-slate-200/60 dark:border-slate-800/60 shadow-xs">
-            <div className="w-14 h-14 bg-gradient-to-br from-[#2AABEE] to-[#E56B88] rounded-2xl mx-auto flex items-center justify-center text-white text-2xl shadow-md">
+          <div className="my-auto text-center space-y-3 p-6 max-w-sm mx-auto bg-white/80 dark:bg-[#182533]/80 backdrop-blur-md rounded-3xl border border-slate-200/60 dark:border-slate-800/60 shadow-xs animate-pop-bounce">
+            <div
+              onClick={(e) => {
+                sounds.playSquish();
+                particlesRef.current?.triggerBurst(e.clientX, e.clientY, ['💖', '✨', '🦔', '🐾', '🥰']);
+              }}
+              title="Tap Prickle for love! 🦔💖"
+              className="w-16 h-16 bg-gradient-to-br from-[#2AABEE] via-[#9B7AD5] to-[#E56B88] rounded-3xl mx-auto flex items-center justify-center text-white text-3xl shadow-lg cursor-pointer animate-wiggle hover:scale-110 active:scale-95 transition-transform"
+            >
               🦔
             </div>
-            <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
-              Only for Puchki and Puchu
+            <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center justify-center gap-1.5">
+              <span>Only for Puchki & Puchu</span>
+              <Heart className="w-4 h-4 text-[#E56B88] fill-[#E56B88] animate-heartbeat" />
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Welcome to your private one-to-one messaging sanctuary! Say hello or send a photo to begin.
+              Welcome to your private one-to-one messaging sanctuary! Say hello below or tap one of our quick animated stickers to begin.
             </p>
           </div>
         ) : (
@@ -305,7 +335,7 @@ export default function ChatWindow({ myIdentity }: ChatWindowProps) {
               return (
                 <React.Fragment key={msg.id}>
                   {showDateHeader && (
-                    <div className="sticky top-2 z-10 flex justify-center my-3 pointer-events-none">
+                    <div className="sticky top-2 z-10 flex justify-center my-3 pointer-events-none animate-msg">
                       <span className="bg-slate-800/40 dark:bg-slate-900/60 backdrop-blur-md text-white text-[11px] font-medium px-3 py-1 rounded-full shadow-xs">
                         {formatStickyHeaderDate(msg.created_at)}
                       </span>
@@ -337,17 +367,25 @@ export default function ChatWindow({ myIdentity }: ChatWindowProps) {
         <button
           onClick={() => scrollToBottom(true)}
           aria-label="Scroll to bottom"
-          className="absolute bottom-20 right-5 z-20 bg-white dark:bg-[#182533] text-slate-700 dark:text-slate-200 p-2.5 rounded-full shadow-xl border border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-center animate-bounce"
+          className="absolute bottom-28 right-5 z-20 bg-white dark:bg-[#182533] text-slate-700 dark:text-slate-200 p-2.5 rounded-full shadow-xl border border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-center animate-bounce"
           title="Scroll to bottom"
         >
           <ArrowDown className="w-5 h-5 text-[#2AABEE]" />
           {unreadCountBelow > 0 && (
-            <span className="absolute -top-1.5 -left-1.5 bg-rose-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-xs">
+            <span className="absolute -top-1.5 -left-1.5 bg-rose-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-xs animate-pulse">
               {unreadCountBelow}
             </span>
           )}
         </button>
       )}
+
+      {/* Quick Stickers Bar */}
+      <QuickStickers
+        onSendSticker={handleSendSticker}
+        onTriggerBurst={(emojis) => {
+          particlesRef.current?.triggerBurst(window.innerWidth / 2, window.innerHeight - 150, emojis);
+        }}
+      />
 
       {/* Bottom Composer */}
       <Composer

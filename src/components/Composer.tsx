@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Paperclip, Mic, Send, X, Trash2, Loader2, Image as ImageIcon, File } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { SenderIdentity, MediaType } from '@/lib/types';
+import { sounds } from '@/lib/soundUtils';
 
 interface ComposerProps {
   myIdentity: SenderIdentity;
@@ -115,6 +116,7 @@ export default function Composer({
       mediaRecorder.start(200);
       setIsRecording(true);
       setRecordingTime(0);
+      sounds.playSquish();
 
       timerIntervalRef.current = setInterval(() => {
         setRecordingTime((prev) => prev + 1);
@@ -125,6 +127,7 @@ export default function Composer({
   };
 
   const stopAndDiscardRecording = () => {
+    sounds.playSquish();
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
@@ -136,6 +139,7 @@ export default function Composer({
   };
 
   const stopAndSendVoiceNote = async () => {
+    sounds.playSquish();
     if (!mediaRecorderRef.current || !isRecording) return;
 
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
